@@ -1,16 +1,12 @@
-import os
 import time
 
 import pyautogui
-import pywinctl as pwc
 from dualsense_controller import DualSenseController
+from config_loader import ConfigLoader
+from action_handler import ActionHandler
 
 controller = None
-
-
-def get_active_window():
-    active_window = pwc.getActiveWindow()
-    return active_window
+action_handler = None
 
 
 # Use a simple class to track finger states
@@ -18,7 +14,6 @@ class TouchTracker:
     def __init__(self):
         self.f1_active = False
         self.f2_active = False
-        self.clicked = False
 
 
 tracker = TouchTracker()
@@ -37,10 +32,10 @@ def on_f2_change(value):
 def on_btn_touchpad(value):
     global controller
     if tracker.f2_active and value:
+        # Click with two fingers
         pyautogui.rightClick()
-    elif tracker.f1_active and value:
-        controller.player_leds.set_inner()
-        controller.left_trigger.effect.no_resistance()
+    # elif tracker.f1_active and value:
+    # Click with one finger
 
 
 def on_error(error):
@@ -63,81 +58,22 @@ def on_battery_discharging(battery_level) -> None:
     print(f"on battery discharging: {battery_level}")
 
 
-def on_gyroscope_change(gyroscope):
-    print(f"on_gyroscope_change: {gyroscope}")
-
-
-def on_accelerometer_change(accelerometer):
-    print(f"on_accelerometer_change: {accelerometer}")
-
-
-def on_orientation_change(orientation):
-    print(f"on_orientation_change: {orientation}")
-
-
-def on_cross_down():
-    print(get_active_window().getAppName())
-
-
-def on_circle_down():
-    if "chrome" in get_active_window().getAppName():
-        pyautogui.hotkey("ctrl", "r")
-
-
-def on_left_down():
-    if any(app in get_active_window().getAppName() for app in ["chrome"]):
-        pyautogui.hotkey("alt", "left")
-
-
-def on_right_down():
-    if "chrome" in get_active_window().getAppName():
-        pyautogui.hotkey("alt", "right")
-
-
-def on_up_down():
-    if "chrome" in get_active_window().getAppName():
-        pyautogui.press("home")
-
-
-def on_down_down():
-    if "chrome" in get_active_window().getAppName():
-        pyautogui.press("end")
-
-
-def on_l1_down():
-    if any(app in get_active_window().getAppName() for app in ["chrome", "zed"]):
-        pyautogui.hotkey("ctrl", "pgup")
-
-
-def on_r1_down():
-    if any(app in get_active_window().getAppName() for app in ["chrome", "zed"]):
-        pyautogui.hotkey("ctrl", "pgdn")
-
-
-def on_select_down():
-    os.system(
-        "qdbus org.kde.kglobalaccel /component/kmix invokeShortcut 'decrease_volume'"
-    )
-
-
-def on_start_down():
-    os.system(
-        "qdbus org.kde.kglobalaccel /component/kmix invokeShortcut 'increase_volume'"
-    )
-
-
-def on_ps_down():
-    os.system("qdbus org.kde.kglobalaccel /component/kmix invokeShortcut 'mute'")
-
-
 def on_right_stick_change(right_stick):
     current_y = right_stick.y
     delta_y_threshold = 0.15
     if abs(current_y) > delta_y_threshold:
-        print(right_stick)
+        # print(right_stick)
         pyautogui.scroll(
-            current_y * 2
+            int(current_y * 2)
         )  # a non-linear function might be used to allow smoother scrolling
+
+
+def create_button_handler(button_name):
+    def handler():
+        if action_handler:
+            action_handler.handle_button(button_name)
+
+    return handler
 
 
 def main():
@@ -146,8 +82,15 @@ def main():
         raise Exception("No DualSense Controller available.")
     else:
         print(device_infos)
+
     global controller
     controller = DualSenseController()
+
+    # Load configuration
+    config_loader = ConfigLoader("data/config.yml")
+    config = config_loader.load_config()
+    global action_handler
+    action_handler = ActionHandler(config.get("shortcuts_config", {}))
 
     controller.on_error(on_error)
     controller.touch_finger_1.on_change(on_f1_change)
@@ -159,28 +102,40 @@ def main():
     controller.battery.on_charging(on_battery_charging)
     controller.battery.on_discharging(on_battery_discharging)
 
-    controller.btn_cross.on_down(on_cross_down)
-    controller.btn_circle.on_down(on_circle_down)
-    controller.btn_l1.on_down(on_l1_down)
-    controller.btn_r1.on_down(on_r1_down)
-    controller.btn_left.on_down(on_left_down)
-    controller.btn_right.on_down(on_right_down)
-    controller.btn_down.on_down(on_down_down)
-    controller.btn_up.on_down(on_up_down)
-    controller.btn_create.on_down(on_select_down)  # select
-    controller.btn_options.on_down(on_start_down)  # start
-    controller.btn_ps.on_down(on_ps_down)
-    # controller.right_stick.on_change(on_right_stick_change)
+    # Dynamic Registration
+    # Mapping from matched config button names to controller buttons
 
+    # Define mapping: (config_name, controller_button_obj)
+    button_mapping = {
+        "cross": controller.btn_cross,
+        "circle": controller.btn_circle,
+        "triangle": controller.btn_triangle,
+        "square": controller.btn_square,
+        "l1": controller.btn_l1,
+        "r1": controller.btn_r1,
+        "arrow_left": controller.btn_left,
+        "arrow_right": controller.btn_right,
+        "arrow_down": controller.btn_down,
+        "arrow_up": controller.btn_up,
+        "create": controller.btn_create,
+        "options": controller.btn_options,
+        "ps": controller.btn_ps,
+    }
+
+    for name, btn in button_mapping.items():
+        btn.on_down(create_button_handler(name))
+
+    # controller.right_stick.on_change(on_right_stick_change)
     # controller.gyroscope.on_change(on_gyroscope_change)
     # controller.accelerometer.on_change(on_accelerometer_change)
     # controller.orientation.on_change(on_orientation_change)
 
     try:
         controller.activate()
+        print("Controller activated. Press Ctrl+C to exit.")
         while True:
             on_right_stick_change(controller.right_stick.value)
-            time.sleep(0.001)
+            time.sleep(0.01)
     except KeyboardInterrupt:
         pass
     finally:

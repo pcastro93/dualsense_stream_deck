@@ -8,6 +8,7 @@ dependencies = [
     "dualsense-controller>=0.3.1",
     "pyautogui>=0.9.54",
     "pywinctl>=0.4.1",
+    "pyyaml>=6.0.3",
 ]
 [[tool.pyrefly.sub-config]]
 matches = "src"
