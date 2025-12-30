@@ -1,22 +1,15 @@
 import os
 
 import pyautogui
-import pywinctl as pwc
 
 from mapping import get_mapping
+from windows import get_active_window
 
 
 class ActionHandler:
     def __init__(self, config, controller):
         self.config = config
         self.controller = controller
-
-    def get_active_window(self):
-        try:
-            return pwc.getActiveWindow()
-        except Exception as e:
-            print(f"Error getting active window: {e}")
-            return None
 
     def _matches_application(self, window, app_config):
         if not window:
@@ -96,7 +89,7 @@ class ActionHandler:
         return len(buttons_pressed) == len(buttons)
 
     def handle_button(self, button_name):
-        active_window = self.get_active_window()
+        active_window = get_active_window()
 
         # We need to collect all matching shortcuts (both single and multi-button)
         # And prioritize the ones with MOST buttons (specific > general)
