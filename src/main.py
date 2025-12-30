@@ -1,9 +1,12 @@
+import math
 import time
 
 import pyautogui
 from dualsense_controller import DualSenseController
 from config_loader import ConfigLoader
 from action_handler import ActionHandler
+
+from mapping import get_mapping
 
 controller = None
 action_handler = None
@@ -59,13 +62,27 @@ def on_battery_discharging(battery_level) -> None:
 
 
 def on_right_stick_change(right_stick):
+    DELTA_Y_THRESHOLD = 0.15
+    MAX_SCROLL_SPEED = 4
+    MIN_SCROLL_SPEED = 1
     current_y = right_stick.y
-    delta_y_threshold = 0.15
-    if abs(current_y) > delta_y_threshold:
-        # print(right_stick)
-        pyautogui.scroll(
-            int(current_y * 2)
-        )  # a non-linear function might be used to allow smoother scrolling
+
+    def transform_input(y_value):
+        """Map input value using a non-linear function for smoother scrolling"""
+        y_sign = math.copysign(1, y_value)
+        return y_sign * abs(y_value * y_value * y_value)
+
+    def get_value_to_scroll(y_value):
+        y_sign = math.copysign(1, y_value)
+        to_scroll = int(transform_input(y_value) * MAX_SCROLL_SPEED)
+        return (
+            to_scroll
+            if abs(to_scroll) > MIN_SCROLL_SPEED
+            else MIN_SCROLL_SPEED * y_sign
+        )
+
+    if abs(current_y) >= DELTA_Y_THRESHOLD:
+        pyautogui.scroll(get_value_to_scroll(current_y))
 
 
 def create_button_handler(button_name):
@@ -90,7 +107,7 @@ def main():
     config_loader = ConfigLoader("data/config.yml")
     config = config_loader.load_config()
     global action_handler
-    action_handler = ActionHandler(config.get("shortcuts_config", {}))
+    action_handler = ActionHandler(config.get("shortcuts_config", {}), controller)
 
     controller.on_error(on_error)
     controller.touch_finger_1.on_change(on_f1_change)
@@ -104,26 +121,9 @@ def main():
 
     # Dynamic Registration
     # Mapping from matched config button names to controller buttons
-
-    # Define mapping: (config_name, controller_button_obj)
-    button_mapping = {
-        "cross": controller.btn_cross,
-        "circle": controller.btn_circle,
-        "triangle": controller.btn_triangle,
-        "square": controller.btn_square,
-        "l1": controller.btn_l1,
-        "r1": controller.btn_r1,
-        "arrow_left": controller.btn_left,
-        "arrow_right": controller.btn_right,
-        "arrow_down": controller.btn_down,
-        "arrow_up": controller.btn_up,
-        "create": controller.btn_create,
-        "options": controller.btn_options,
-        "ps": controller.btn_ps,
-    }
-
+    button_mapping = get_mapping()
     for name, btn in button_mapping.items():
-        btn.on_down(create_button_handler(name))
+        getattr(controller, btn).on_down(create_button_handler(name))
 
     # controller.right_stick.on_change(on_right_stick_change)
     # controller.gyroscope.on_change(on_gyroscope_change)
