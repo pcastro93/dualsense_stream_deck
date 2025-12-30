@@ -2,7 +2,14 @@
 
 This is a simple application that allows you to control your computer using a DualSense controller.
 
-### Setup
+## Features
+- Create custom shortcuts for specific applications (name and/or title).
+- Support for hotkeys and commands.
+- Hierarchical precedence of shortcuts.
+- Check the [sample configuration](#sample-configuration) for more details.
+
+
+## Setup
 
 #### Requirements
 - [Uv](https://docs.astral.sh/uv/)
@@ -195,3 +202,9 @@ shortcuts_config:
         hotkeys:
           - ctrl
           - 4
+```
+
+## Main author
+
+Send any comments, patches, and suggestions to: 
+[Piettro Castro](https://www.linkedin.com/in/piettro-castro-844208117/)
