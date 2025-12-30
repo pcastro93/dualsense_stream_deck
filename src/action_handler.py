@@ -1,7 +1,9 @@
-from mapping import get_mapping
 import os
+
 import pyautogui
 import pywinctl as pwc
+
+from mapping import get_mapping
 
 
 class ActionHandler:
@@ -51,6 +53,7 @@ class ActionHandler:
 
         elif action_type == "hotkey":
             keys = action_def.get("hotkeys", [])
+            keys = [str(key) for key in keys]
             if keys:
                 pyautogui.hotkey(*keys)
 
