@@ -1,0 +1,22 @@
+[project]
+name = "dualsense"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "dualsense-controller>=0.3.1",
+    "pyautogui>=0.9.54",
+    "pywinctl>=0.4.1",
+]
+[[tool.pyrefly.sub-config]]
+matches = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pyrefly]
+project-includes = ["src"]
+search-path = ["src"]
+infer-with-first-use = true
+strict = false
