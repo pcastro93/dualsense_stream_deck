@@ -5,8 +5,22 @@ This is a simple application that allows you to control your computer using a Du
 ## Features
 - Create custom shortcuts for specific applications (name and/or title).
 - Support for hotkeys and commands.
+- Support for pressing multiple buttons to perform an action (e.g: L2 + Arrow Right to move an application to the right).
 - Hierarchical precedence of shortcuts.
 - Check the [sample configuration](#sample-configuration) for more details.
+
+## Uses
+- Google Meet (toggle mic and camera)
+- Web browser (navigate between tabs, content, etc.)
+- IDE (run project, debug, etc.)
+- System (volume, brightness, etc.)
+
+## TODO
+- [ ] Pass config as argument
+- [ ] Mode/flag to view app names and titles
+- [ ] Run in the background
+- [ ] Detect when a controller is connected (start, restart, etc)
+- [ ] Logs
 
 
 ## Setup
@@ -204,7 +218,7 @@ shortcuts_config:
           - 4
 ```
 
-## Main author
+## Main Author
 
 Send any comments, patches, and suggestions to: 
 [Piettro Castro](https://www.linkedin.com/in/piettro-castro-844208117/)
