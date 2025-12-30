@@ -1,12 +1,16 @@
+import os
+import argparse
 import math
 import time
 
+import yaml.cyaml
 import pyautogui
 from dualsense_controller import DualSenseController
 from config_loader import ConfigLoader
 from action_handler import ActionHandler
 
 from mapping import get_mapping
+from windows import print_all_windows_data
 
 controller = None
 action_handler = None
@@ -94,9 +98,40 @@ def create_button_handler(button_name):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="DualSense Stream Deck")
+    parser.add_argument("--config", help="The config file", required=True)
+    parser.add_argument(
+        "--view-windows",
+        action="store_true",
+        help="View available windows",
+    )
+    parser.add_argument(
+        "--verbose", action="store_true", help="Increase output verbosity"
+    )
+
+    args = parser.parse_args()
+
+    if args.view_windows:
+        print_all_windows_data()
+        return
+
+    # Check if config file exists
+    if not os.path.exists(args.config):
+        print(f"Config file does not exist: {args.config}")
+        return -1
+
+    # Check if config file is a valid YAML file
+    try:
+        with open(args.config, "r") as f:
+            yaml.safe_load(f)
+    except yaml.YAMLError as exc:
+        print(f"Invalid YAML file: {args.config}")
+        return -1
+
     device_infos = DualSenseController.enumerate_devices()
     if len(device_infos) < 1:
-        raise Exception("No DualSense Controller available.")
+        print("No DualSense Controller available.")
+        return -1
     else:
         print(device_infos)
 
@@ -104,7 +139,7 @@ def main():
     controller = DualSenseController()
 
     # Load configuration
-    config_loader = ConfigLoader("data/config.yml")
+    config_loader = ConfigLoader(args.config)
     config = config_loader.load_config()
     global action_handler
     action_handler = ActionHandler(config.get("shortcuts_config", {}), controller)

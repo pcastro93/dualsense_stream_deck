@@ -16,8 +16,6 @@ This is a simple application that allows you to control your computer using a Du
 - System (volume, brightness, etc.)
 
 ## TODO
-- [ ] Pass config as argument
-- [ ] Mode/flag to view app names and titles
 - [ ] Run in the background
 - [ ] Detect when a controller is connected (start, restart, etc)
 - [ ] Logs
