@@ -6,6 +6,8 @@ def get_mapping():
         "triangle": "btn_triangle",
         "square": "btn_square",
         "l1": "btn_l1",
+        "l3": "btn_l3",
+        "r3": "btn_r3",
         "r1": "btn_r1",
         "arrow_left": "btn_left",
         "arrow_right": "btn_right",
