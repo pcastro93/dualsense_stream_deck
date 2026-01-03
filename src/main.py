@@ -13,6 +13,7 @@ from mapping import get_mapping
 from windows import print_all_windows_data
 
 controller = None
+is_active = True
 action_handler = None
 
 
@@ -47,6 +48,8 @@ def on_btn_touchpad(value):
 
 def on_error(error):
     print(f"an unforseen error occured {error}")
+    global is_active
+    is_active = False
 
 
 def on_battery_change(battery) -> None:
@@ -128,53 +131,57 @@ def main():
         print(f"Invalid YAML file: {args.config}")
         return -1
 
-    device_infos = DualSenseController.enumerate_devices()
-    if len(device_infos) < 1:
-        print("No DualSense Controller available.")
-        return -1
-    else:
-        print(device_infos)
-
     global controller
-    controller = DualSenseController()
+    global is_active
 
-    # Load configuration
-    config_loader = ConfigLoader(args.config)
-    config = config_loader.load_config()
-    global action_handler
-    action_handler = ActionHandler(config.get("shortcuts_config", {}), controller)
+    while True:
+        device_infos = DualSenseController.enumerate_devices()
+        if len(device_infos) < 1:
+            print("No DualSense Controller available.")
+            time.sleep(1)
+            continue
+        else:
+            print(device_infos)
+        controller = DualSenseController()
 
-    controller.on_error(on_error)
-    controller.touch_finger_1.on_change(on_f1_change)
-    controller.touch_finger_2.on_change(on_f2_change)
-    controller.btn_touchpad.on_change(on_btn_touchpad)
+        # Load configuration
+        config_loader = ConfigLoader(args.config)
+        config = config_loader.load_config()
+        global action_handler
+        action_handler = ActionHandler(config.get("shortcuts_config", {}), controller)
 
-    controller.battery.on_change(on_battery_change)
-    controller.battery.on_lower_than(20, on_battery_lower_than)
-    controller.battery.on_charging(on_battery_charging)
-    controller.battery.on_discharging(on_battery_discharging)
+        controller.on_error(on_error)
+        controller.touch_finger_1.on_change(on_f1_change)
+        controller.touch_finger_2.on_change(on_f2_change)
+        controller.btn_touchpad.on_change(on_btn_touchpad)
 
-    # Dynamic Registration
-    # Mapping from matched config button names to controller buttons
-    button_mapping = get_mapping()
-    for name, btn in button_mapping.items():
-        getattr(controller, btn).on_down(create_button_handler(name))
+        controller.battery.on_change(on_battery_change)
+        controller.battery.on_lower_than(20, on_battery_lower_than)
+        controller.battery.on_charging(on_battery_charging)
+        controller.battery.on_discharging(on_battery_discharging)
 
-    # controller.right_stick.on_change(on_right_stick_change)
-    # controller.gyroscope.on_change(on_gyroscope_change)
-    # controller.accelerometer.on_change(on_accelerometer_change)
-    # controller.orientation.on_change(on_orientation_change)
+        # Dynamic Registration
+        # Mapping from matched config button names to controller buttons
+        button_mapping = get_mapping()
+        for name, btn in button_mapping.items():
+            getattr(controller, btn).on_down(create_button_handler(name))
 
-    try:
-        controller.activate()
-        print("Controller activated. Press Ctrl+C to exit.")
-        while True:
-            on_right_stick_change(controller.right_stick.value)
-            time.sleep(0.01)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        controller.deactivate()
+        # controller.right_stick.on_change(on_right_stick_change)
+        # controller.gyroscope.on_change(on_gyroscope_change)
+        # controller.accelerometer.on_change(on_accelerometer_change)
+        # controller.orientation.on_change(on_orientation_change)
+
+        try:
+            controller.activate()
+            is_active = True
+            print("Controller activated.")
+            while is_active:
+                on_right_stick_change(controller.right_stick.value)
+                time.sleep(0.01)
+        finally:
+            print("Deactivating controller...")
+            controller.deactivate()
+            controller = None
 
 
 if __name__ == "__main__":

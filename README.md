@@ -17,8 +17,8 @@ This is a simple application that allows you to control your computer using a Du
 
 ## TODO
 - [ ] Run in the background
-- [ ] Detect when a controller is connected (start, restart, etc)
 - [ ] Logs
+- [ ] Organize code
 
 
 ## Setup
